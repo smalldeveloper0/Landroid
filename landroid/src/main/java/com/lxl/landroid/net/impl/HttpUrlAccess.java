@@ -1,5 +1,7 @@
 package com.lxl.landroid.net.impl;
 
+import android.util.Log;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -61,7 +63,7 @@ public class HttpUrlAccess implements HttpAccess {
 							"multipart/form-data; boundary=" + BOUNDARY);
 					Iterator<Entry<String, String>> ie = params.entrySet()
 							.iterator();
-					StringBuffer pstr = new StringBuffer();
+					StringBuilder pstr = new StringBuilder();
 
 					while (ie.hasNext()) {
 						Entry<String, String> item = ie.next();
@@ -90,7 +92,7 @@ public class HttpUrlAccess implements HttpAccess {
 				Map<String, File> files = requestParams.getFiles();
 				if (files != null && !files.isEmpty()) {
 
-					connection.setRequestProperty("connection", "Keep-Alive");
+//					connection.setRequestProperty("connection", "Keep-Alive");
 					OutputStream out = new DataOutputStream(
 							connection.getOutputStream());
 					byte[] end_data = ("\r\n--" + BOUNDARY + "--\r\n")
@@ -105,9 +107,9 @@ public class HttpUrlAccess implements HttpAccess {
 						sb.append("--");
 						sb.append(BOUNDARY);
 						sb.append("\r\n");
-						sb.append("Content-Disposition: form-data;name=\"file"
+						sb.append("Content-Disposition: form-data;name=\""
 								+ item.getKey() + "\";filename=\""
-								+ item.getValue().getName() + "\"\r\n");
+								+ item.getKey() + "\"\r\n");
 						sb.append("Content-Type:application/octet-stream\r\n\r\n");
 
 						byte[] data = sb.toString().getBytes();
@@ -123,13 +125,15 @@ public class HttpUrlAccess implements HttpAccess {
 						in.close();
 					}
 					out.write(end_data);
-					out.flush();
-					out.close();
+
 				}
 				
 			}else {
 				curl_md5=MD5Util.MD5(request.getUrl());
 			}
+
+			connection.getOutputStream().flush();
+			connection.getOutputStream().close();
 			// 获取响应码
 			int status_code = connection.getResponseCode();
 
@@ -161,8 +165,8 @@ public class HttpUrlAccess implements HttpAccess {
 				inputStream.close();
 				//写回缓存
 				byte[]data= outputStream.toByteArray();
-				if(request.getCache()!=null)
-				request.getCache().put(curl_md5, data);
+				if(request.getCache()!=null&&(requestParams.getFiles()==null||requestParams.getFiles().isEmpty()))
+					request.getCache().put(curl_md5, data);
 				return data;
 			}
 
